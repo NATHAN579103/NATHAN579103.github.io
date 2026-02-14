@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Infinite Sanctuary | 100 Unique Blooms</title>
+    <style>
+        :root {
+            --amethyst: #e0aaff;
+            --glass: rgba(255, 255, 255, 0.02);
+            --bg-dark: #050208;
+        }
+
+        body {
+            margin: 0; padding: 0; height: 100vh;
+            background: radial-gradient(circle at center, #1a0b2e 0%, var(--bg-dark) 100%);
+            color: white; font-family: 'Segoe UI', Tahoma, sans-serif;
+            overflow: hidden; display: flex;
+        }
+
+        /* --- RESTORED RETURN BUTTON --- */
+        .back-home {
+            position: fixed; top: 20px; left: 20px; padding: 10px 25px;
+            border: 1px solid var(--amethyst); border-radius: 50px;
+            color: var(--amethyst); text-decoration: none; font-size: 11px;
+            z-index: 1000; background: rgba(0,0,0,0.8); transition: 0.4s;
+            backdrop-filter: blur(10px); letter-spacing: 2px; text-transform: uppercase;
+        }
+        .back-home:hover { background: var(--amethyst); color: black; }
+
+        /* --- HEART SYNC OVERLAY --- */
+        #sync-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark); z-index: 2000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 1.5s ease;
+        }
+
+        .heart-emoji {
+            font-size: 90px; cursor: pointer; user-select: none;
+            filter: drop-shadow(0 0 30px rgba(255, 45, 85, 0.6));
+            animation: heartBeat 1.2s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+            z-index: 2001;
+        }
+
+        @keyframes heartBeat {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.25); }
+            30% { transform: scale(1.1); }
+            45% { transform: scale(1.35); }
+            100% { transform: scale(1); }
+        }
+
+        .reveal-ring {
+            position: absolute; width: 180px; height: 180px;
+            border: 1px solid var(--amethyst); border-radius: 50%;
+            transform: scale(0); opacity: 0; pointer-events: none;
+            transition: transform 0.1s linear;
+        }
+
+        /* --- MAIN UI --- */
+        #main-content { opacity: 0; display: flex; width: 100%; height: 100%; transition: opacity 2s; pointer-events: none; }
+        #main-content.visible { opacity: 1; pointer-events: auto; }
+
+        canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 1; }
+
+        #sidebar {
+            width: 320px; height: 100vh; background: var(--glass);
+            backdrop-filter: blur(40px); border-right: 1px solid rgba(255,255,255,0.05);
+            z-index: 10; overflow-y: auto;
+        }
+
+        #sidebar::-webkit-scrollbar { width: 4px; }
+        #sidebar::-webkit-scrollbar-track { background: transparent; }
+        #sidebar::-webkit-scrollbar-thumb { 
+            background: linear-gradient(transparent, var(--amethyst), transparent); 
+            border-radius: 10px;
+        }
+
+        .sidebar-header { padding: 60px 20px 30px; text-align: center; }
+        .sidebar-header h2 { font-weight: 100; letter-spacing: 8px; color: var(--amethyst); margin: 0; }
+
+        .flower-item {
+            padding: 20px 25px; border-bottom: 1px solid rgba(255,255,255,0.03);
+            cursor: pointer; transition: 0.4s; display: flex; align-items: center; gap: 20px; opacity: 0.7;
+        }
+        .flower-item:hover { background: rgba(224, 170, 255, 0.06); opacity: 1; padding-left: 35px; }
+        .flower-item.active-item { opacity: 1; background: rgba(224, 170, 255, 0.1); border-left: 3px solid var(--amethyst); }
+
+        .icon-preview { 
+            width: 35px; height: 35px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 18px; 
+        }
+
+        #main-view { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5; }
+        .stage { height: 450px; display: flex; align-items: flex-end; position: relative; }
+
+        .flower-container { display: flex; flex-direction: column; align-items: center; transform-origin: bottom center; }
+        .stem {
+            width: 5px; height: 0; background: linear-gradient(to top, #0f1a0b, #3a7a33);
+            border-radius: 10px; position: relative; transition: height 2s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: sway 4s infinite ease-in-out;
+        }
+
+        @keyframes sway {
+            0%, 100% { transform: rotate(-1.5deg); }
+            50% { transform: rotate(1.5deg); }
+        }
+
+        .head { position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%) scale(0); transition: transform 1.5s 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        
+        .petal {
+            position: absolute; bottom: 0; left: 50%; transform-origin: bottom center; opacity: 0;
+            transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1); filter: drop-shadow(0 0 8px var(--petal-glow));
+            animation: breathe 3s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: translateX(-50%) rotate(var(--rot)) scale(1); }
+            50% { transform: translateX(-50%) rotate(var(--rot)) scale(1.05); filter: drop-shadow(0 0 15px var(--petal-glow)); }
+        }
+
+        .growing .stem { height: var(--h); }
+        .growing .head { transform: translate(-50%, -50%) scale(1); }
+        .growing .petal { opacity: 0.9; }
+
+        .msg-container { text-align: center; max-width: 550px; margin-top: 50px; opacity: 0; transition: 1s ease; }
+        .msg-container.visible { opacity: 1; }
+        .msg-container h1 { font-weight: 200; letter-spacing: 4px; margin: 0; font-size: 1.4rem; text-transform: uppercase; }
+        .msg-container p { font-style: italic; opacity: 0.7; margin-top: 20px; line-height: 1.8; font-size: 1.1rem; padding: 0 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="sync-layer">
+        <div class="reveal-ring" id="ring"></div>
+        <div class="heart-emoji" id="heart-btn" 
+             onmousedown="startSync()" onmouseup="stopSync()" 
+             ontouchstart="startSync()" ontouchend="stopSync()">❤️</div>
+        <div class="sync-text" style="margin-top: 20px; letter-spacing: 3px; font-size: 10px; opacity: 0.5;">HOLD TO SYNC</div>
+    </div>
+
+    <video id="bg-music" loop style="display:none;">
+        <source src="C:\Users\Mark Nathan\OneDrive\Desktop\assets\Download (7).mp4" type="video/mp4">
+    </video>
+    <audio id="snd-heartbeat" loop src="https://assets.mixkit.co/active_storage/sfx/2653/2653-preview.mp3"></audio>
+    <audio id="snd-grow" src="https://assets.mixkit.co/active_storage/sfx/1348/1348-preview.mp3"></audio>
+
+    <div id="main-content">
+        <a href="DEKSTOP.html" class="back-home">❮ RETURN</a>
+        <canvas id="canvas"></canvas>
+        
+        <div id="sidebar">
+            <div class="sidebar-header"><h2>SANCTUARY</h2></div>
+            <div id="list-container"></div>
+        </div>
+
+        <div id="main-view">
+            <div id="flower-display" class="stage"></div>
+            <div class="msg-container" id="msg-display"></div>
+        </div>
+    </div>
+
+    <script>
+        const music = document.getElementById('bg-music');
+        const beat = document.getElementById('snd-heartbeat');
+        const syncLayer = document.getElementById('sync-layer');
+        const mainContent = document.getElementById('main-content');
+        const ring = document.getElementById('ring');
+        
+        let holdTimer, progress = 0, isRevealed = false;
+
+        function startSync() {
+            if(isRevealed) return;
+            music.play(); music.volume = 0;
+            beat.play(); beat.volume = 0.3;
+            ring.style.opacity = "1";
+            holdTimer = setInterval(() => {
+                progress += 1.5;
+                ring.style.transform = `scale(${progress/8})`;
+                if(music.volume < 0.6) music.volume += 0.02;
+                if (progress >= 100) {
+                    isRevealed = true; clearInterval(holdTimer);
+                    beat.pause(); syncLayer.style.opacity = "0";
+                    mainContent.classList.add('visible');
+                    setTimeout(() => syncLayer.style.display = "none", 1500);
+                }
+            }, 30);
+        }
+
+        function stopSync() {
+            if(isRevealed) return;
+            clearInterval(holdTimer); progress = 0;
+            ring.style.transform = `scale(0)`; ring.style.opacity = "0";
+            music.pause(); music.currentTime = 0;
+            beat.pause(); beat.currentTime = 0;
+        }
+
+        const customMessages = [
+            "Hon, your presence is like the dawn—it illuminates my world with a gentle, hopeful light.",
+            "Baby, your laughter is the most beautiful melody, capable of turning any ordinary moment into a symphony.",
+            "Mahal, your spirit shines brighter than any star, guiding me through the darkest nights.",
+            "Love, being with you feels like a dream from which I never want to awaken.",
+            "Hon, your kindness is a rare gem, precious and priceless in a world that often forgets tenderness.",
+            "Baby, your smile is a masterpiece, a radiant expression of the beautiful soul within.",
+            "Mahal, your wisdom is a deep well, from which I draw endless inspiration and understanding.",
+            "Love, your touch is like a gentle breeze, soothing and comforting in every way.",
+            "Hon, your strength is a quiet storm, powerful yet graceful in its intensity.",
+            "Baby, your eyes are like pools of starlight, reflecting the infinite possibilities of our future.",
+            "Mahal, your heart is a sanctuary, a place of peace and unconditional love.",
+            "Love, your voice is like a soft whisper, carrying the sweetest secrets of the universe.",
+            "Hon, your mind is a garden of thoughts, blooming with creativity and insight.",
+            "Baby, your dreams are like vibrant tapestries, weaving a future filled with hope and wonder.",
+            "Mahal, your soul is an ancient song, resonating with timeless beauty and grace.",
+            "Love, your essence is a rare and precious gift, one I cherish more than words can express.",
+            "Hon, your empathy is a beacon of light, guiding us toward understanding and compassion.",
+            "Baby, your determination is an unyielding force, inspiring me to reach for the impossible.",
+            "Mahal, your spirit is a boundless ocean, filled with depth, mystery, and endless possibilities.",
+            "Love, your love is a guiding star, leading me home, no matter how far I roam.",
+            "Hon, your thoughts are like constellations, each one a universe of its own.",
+            "Baby, your courage is a blazing fire, warming those around you with its strength.",
+            "Mahal, your grace is like a dance, effortless and captivating in every move.",
+            "Love, your soul is a hidden garden, waiting to be discovered and cherished.",
+            "Hon, your passion is a vibrant flame, igniting the world with its intensity.",
+            "Baby, your laughter is the sweetest song, filling my heart with joy and light.",
+            "Mahal, your beauty is an eternal spring, forever fresh and endlessly enchanting.",
+            "Love, your spirit is a gentle rain, nourishing the world with its tenderness.",
+            "Hon, your heart is a boundless sky, where dreams take flight and possibilities soar.",
+            "Baby, your presence is a warm embrace, comforting and reassuring in every moment.",
+            "Mahal, your wisdom is a guiding light, illuminating the path ahead with clarity and insight.",
+            "Love, your touch is a gentle whisper, speaking volumes of love and affection.",
+            "Hon, your strength is a quiet river, carving paths of resilience through the toughest terrains.",
+            "Baby, your eyes are sparkling gems, reflecting the beauty and wonder of the world.",
+            "Mahal, your heart is a peaceful haven, where worries fade and serenity abounds.",
+            "Love, your voice is a soothing balm, healing wounds and calming fears with its gentle tone.",
+            "Hon, your mind is a vast library, filled with stories, knowledge, and endless curiosity.",
+            "Baby, your dreams are colorful mosaics, piecing together a future filled with hope and promise.",
+            "Mahal, your soul is an ancient forest, teeming with life, mystery, and timeless wisdom.",
+            "Love, your essence is a rare melody, harmonizing perfectly with the rhythm of my heart.",
+            "Hon, your empathy is a gentle hand, reaching out to comfort and understand those in need.",
+            "Baby, your determination is an unwavering star, guiding you through the darkest nights to your brightest dreams.",
+            "Mahal, your spirit is a boundless canvas, painted with the colors of courage, kindness, and unwavering love.",
+            "Love, your love is a lighthouse, guiding me safely through stormy seas and leading me back to shore.",
+            "Hon, your thoughts are like shooting stars, illuminating the night sky with bursts of brilliance and inspiration.",
+            "Baby, your courage is a roaring flame, burning away doubt and fear, leaving only strength and resilience.",
+            "Mahal, your grace is like a flowing river, effortlessly navigating life's twists and turns with poise and elegance.",
+            "Love, your soul is a hidden garden, filled with rare and beautiful flowers, waiting to bloom and share their fragrance with the world.",
+            "Hon, your passion is a vibrant sunrise, painting the sky with hues of hope, excitement, and endless possibilities.",
+            "Baby, your laughter is a symphony of joy, filling my heart with warmth, happiness, and boundless affection.",
+            "Mahal, your beauty is an eternal flame, burning brightly and illuminating the world with its radiant glow.",
+            "Love, your spirit is a gentle breeze, carrying whispers of hope, peace, and serenity to all who need it.",
+            "Hon, your heart is a boundless ocean, filled with depths of love, compassion, and unwavering loyalty.",
+            "Baby, your presence is a warm embrace, enveloping me in a sense of comfort, security, and unconditional love.",
+            "Mahal, your wisdom is a guiding star, leading me through life's labyrinth with clarity, insight, and unwavering guidance.",
+            "Love, your touch is a gentle rain, nourishing my soul and bringing life to my dreams with its tender caress.",
+            "Hon, your strength is a quiet mountain, standing tall and unwavering in the face of adversity, inspiring me to climb higher.",
+            "Baby, your eyes are sparkling diamonds, reflecting the beauty and brilliance of the world and the depths of your soul.",
+            "Mahal, your heart is a peaceful sanctuary, where worries fade away and serenity reigns supreme, offering solace and tranquility.",
+            "Love, your voice is a soothing melody, calming my fears and healing my wounds with its gentle and comforting tone.",
+            "Hon, your mind is a vast universe, filled with galaxies of thoughts, ideas, and endless possibilities waiting to be explored.",
+            "Baby, your dreams are colorful tapestries, weaving together a future filled with hope, love, and boundless adventures.",
+            "Mahal, your soul is an ancient forest, teeming with life, wisdom, and timeless beauty, inviting me to wander and discover its secrets.",
+            "Love, your essence is a rare and precious gem, sparkling with brilliance, grace, and a unique radiance that captivates my heart.",
+            "Hon, your empathy is a gentle hand, reaching out to comfort, understand, and heal the wounds of those who are hurting.",
+            "Baby, your determination is an unwavering flame, burning brightly and guiding you towards your goals with unwavering resolve.",
+            "Mahal, your spirit is a boundless ocean, filled with depths of mystery, adventure, and endless possibilities waiting to be explored.",
+            "Love, your love is a compass, guiding me through life's journey and leading me towards my true north with unwavering certainty.",
+            "Hon, your thoughts are like stars, each one a brilliant spark of insight and inspiration illuminating the darkness.",
+            "Baby, your courage is a shield, protecting you from harm and empowering you to face any challenge with unwavering strength.",
+            "Mahal, your grace is like music, flowing effortlessly and harmonizing with the rhythm of life, creating a symphony of beauty.",
+            "Love, your soul is a garden, filled with the seeds of kindness, compassion, and love, waiting to blossom and bloom.",
+            "Hon, your passion is a fire, igniting your spirit and fueling your dreams with unwavering enthusiasm and dedication.",
+            "Baby, your laughter is a song, filling my heart with joy, happiness, and a sense of lightness that lifts me higher.",
+            "Mahal, your beauty is a masterpiece, crafted with care and adorned with grace, captivating my heart and soul.",
+            "Love, your spirit is a river, flowing with strength, resilience, and an unwavering determination to overcome any obstacle.",
+            "Hon, your heart is a sky, filled with endless possibilities, dreams waiting to take flight, and a love that knows no bounds.",
+            "Baby, your presence is a gift, bringing joy, warmth, and a sense of completeness to my life, making every moment brighter.",
+            "Mahal, your wisdom is a guide, leading me through life's complexities with clarity, insight, and unwavering support.",
+            "Love, your touch is a balm, soothing my soul, healing my wounds, and filling me with a sense of peace and tranquility.",
+            "Hon, your strength is a mountain, standing tall and unwavering, providing stability, support, and a sense of security.",
+            "Baby, your eyes are stars, twinkling with mischief, wonder, and a depth of emotion that captivates my heart.",
+            "Mahal, your heart is a haven, a safe and peaceful place where I can always find solace, comfort, and unconditional love.",
+            "Love, your voice is an angel, singing melodies of hope, love, and inspiration that uplift my spirit and fill my soul.",
+            "Hon, your mind is a universe, filled with endless possibilities, ideas waiting to be discovered, and a thirst for knowledge.",
+            "Baby, your dreams are rainbows, painting the sky with vibrant colors, promising hope, joy, and a future filled with happiness.",
+            "Mahal, your soul is a forest, teeming with life, mystery, and a deep connection to nature that inspires awe and wonder.",
+            "Love, your essence is a treasure, rare and precious, that I cherish more than words can express, holding it close to my heart.",
+            "Hon, your empathy is a light, shining brightly and illuminating the path towards understanding, compassion, and kindness.",
+            "Baby, your determination is a force, driving you forward with unwavering resolve, inspiring me to chase my dreams with passion.",
+            "Mahal, your spirit is an ocean, vast and deep, filled with mystery, adventure, and a love that knows no boundaries.",
+            "Love, your love is a star, guiding me through the darkness, leading me towards the light, and filling my life with hope.",
+            "Hon, your thoughts are like flowers, blooming with beauty, creativity, and a unique perspective that enriches my world.",
+            "Baby, your courage is a shield, protecting you from negativity, empowering you to face challenges with unwavering strength.",
+            "Mahal, your grace is like a dance, moving with elegance, poise, and a natural rhythm that captivates and enchants.",
+            "Love, your soul is a garden, filled with love, kindness, and compassion, creating a sanctuary of peace and beauty.",
+            "Hon, your passion is a flame, igniting your spirit, fueling your dreams, and inspiring those around you with its warmth.",
+            "Baby, your laughter is a melody, filling my heart with joy, happiness, and a sense of lightness that makes life brighter.",
+            "Mahal, your beauty is a work of art, crafted with care and adorned with grace, captivating my heart and soul forever.",
+            "Love, your spirit is a river, flowing with strength, resilience, and an unwavering determination to overcome any obstacle."
+        ];
+
+        const colors = ['#ff4d4d', '#e0aaff', '#b9f2ff', '#ffd700', '#bf00ff', '#ffb7c5', '#8be9fd', '#00ffcc', '#ff8c00', '#ff00ff'];
+        
+        const listContainer = document.getElementById('list-container');
+        for(let i = 1; i <= 100; i++) {
+            const color = colors[i % colors.length];
+            const item = document.createElement('div');
+            item.className = 'flower-item';
+            item.innerHTML = `
+                <div class="icon-preview" style="background:${color}22; color:${color}; border:1px solid ${color}44;">✦</div>
+                <div>
+                    <b style="font-size:12px; letter-spacing:1px; color:${color}">Bloom #${i}</b><br>
+                    <span style="font-size:10px; opacity:0.4;">Sanctuary Specimen</span>
+                </div>`;
+            item.onclick = () => {
+                document.querySelectorAll('.flower-item').forEach(el => el.classList.remove('active-item'));
+                item.classList.add('active-item');
+                renderFlower(i, color);
+            };
+            listContainer.appendChild(item);
+        }
+
+        function renderFlower(id, color) {
+            const display = document.getElementById('flower-display');
+            const msgDisplay = document.getElementById('msg-display');
+            display.innerHTML = ''; msgDisplay.classList.remove('visible');
+
+            const r1 = (id * 7) % 100;
+            const r2 = (id * 13) % 100;
+            const borderRadius = `${r1}% ${100-r1}% ${r2}% ${100-r2}% / ${r2}% ${r1}% ${100-r1}% ${100-r2}%`;
+
+            let petalsHTML = '';
+            for(let i = 0; i < 8; i++) {
+                let rot = (360 / 8) * i;
+                petalsHTML += `<div class="petal" style="--rot: ${rot}deg; --petal-glow: ${color}; transform: translateX(-50%) rotate(${rot}deg); 
+                    width: 50px; height: 80px; background: ${color}; border-radius: ${borderRadius}; 
+                    transition-delay: ${0.8 + (i * 0.1)}s;"></div>`;
+            }
+
+            const container = document.createElement('div');
+            container.className = 'flower-container';
+            container.style.setProperty('--h', '250px');
+            container.innerHTML = `<div class="stem"><div class="head">${petalsHTML}</div></div>`;
+            display.appendChild(container);
+
+            setTimeout(() => {
+                document.getElementById('snd-grow').currentTime = 0;
+                document.getElementById('snd-grow').play();
+                container.classList.add('growing');
+                msgDisplay.innerHTML = `<h1>Specimen #${id}</h1><p>${customMessages[id-1]}</p>`;
+                setTimeout(() => msgDisplay.classList.add('visible'), 1500); 
+            }, 50);
+        }
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function initParticles() { for(let i = 0; i < 60; i++) particles.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*2, vx: Math.random()-0.5, vy: Math.random()-0.5, l: Math.random()}); }
+        function animate() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy; p.l -= 0.005;
+                if(p.l <= 0) { p.x = Math.random()*canvas.width; p.y = Math.random()*canvas.height; p.l = 1; }
+                ctx.globalAlpha = p.l; ctx.fillStyle = '#e0aaff';
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI*2); ctx.fill();
+            });
+            requestAnimationFrame(animate);
+        }
+        initParticles(); animate();
+    </script>
+</body>
+</html>
